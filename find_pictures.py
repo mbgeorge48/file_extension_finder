@@ -19,7 +19,7 @@ class FindPictures:
     def __init__(self):
         config = ConfigReader()
         self.extension_to_find = config.extension_to_find
-        self.path_to_scan = config.path_to_scan
+        self.path_to_scan = os.path.normpath(config.path_to_scan)
         self.path_to_copy_to =  os.path.normpath(config.path_to_copy_to)
         if not  os.path.isdir("logs"):
             os.mkdir("logs")
@@ -52,7 +52,7 @@ class FindPictures:
                     self.general.debug(f'Found picture named: "{file}"')
                     file_path =  os.path.join(root, file)
                     hash_value = self.get_hash(file_path)
-                    if hash_value not in self.hash_list:
+                    if hash_value not in self.hash_list or hash_value != 1:
                         self.hash_list.append(hash_value)
                         self.unique_file_paths.append(file_path)
                         self.general.info(f'"{file}" is UNIQUE')
@@ -67,14 +67,18 @@ class FindPictures:
 
     def get_hash(self, file_path):
         blocksize = 65536
-        afile = open(file_path, 'rb')
-        hasher = hashlib.md5()
-        buf = afile.read(blocksize)
-        while len(buf) > 0:
-            hasher.update(buf)
+        try:
+            afile = open(file_path, 'rb')
+            hasher = hashlib.md5()
             buf = afile.read(blocksize)
-        afile.close()
-        return hasher.hexdigest()
+            while len(buf) > 0:
+                hasher.update(buf)
+                buf = afile.read(blocksize)
+            afile.close()
+            return hasher.hexdigest()
+        except PermissionError:
+            self.pic_info.warning(f'Permission denied trying to read "{file_path}" marked it as a duplicate')
+            return 1
 
     def move_files(self):
         for file_path in self.unique_file_paths:

@@ -1,5 +1,6 @@
 import yaml
 
+
 class ConfigReader:
 
     def __init__(self):
