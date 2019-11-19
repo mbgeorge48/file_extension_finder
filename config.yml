@@ -1,4 +1,6 @@
-entension.to.look.for:
-  - 'jpg'
-  - 'png'
-  - 'gif'
+extension_to_find:
+  - '.jpg'
+  - '.png'
+  - '.gif'
+path_to_scan: 'test_scan'
+path_to_copy_to: 'test_save'

@@ -1,12 +1,12 @@
-from glob import glob
-from os import path, walk, mkdir
+import os
 from shutil import copy
 import hashlib
 import logging
+from config_reader import ConfigReader
 
 TESTING = True
-FORMATTER = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
-
+# FORMATTER = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
+FORMATTER = logging.Formatter("[%(asctime)s] [%(levelname)8s] --- %(message)s (%(filename)s:%(lineno)s)", "%Y-%m-%d %H:%M:%S")
 
 class FindPictures:
     unique_file_paths = list()
@@ -17,14 +17,14 @@ class FindPictures:
     general = None
 
     def __init__(self):
-        self.extension_to_find = ".jpg"
-        self.path_to_scan = "test_scan"
-        self.path_to_copy_to = path.normpath("test_save\\")
-        # This is where I'll grab my config
-        if not path.isdir("logs"):
-            mkdir("logs")
-        self.pic_info = self.set_logger(path.join("logs","picture_info.log"), logging.DEBUG)
-        self.general =  self.set_logger(path.join("logs","general.log"), logging.DEBUG)
+        config = ConfigReader()
+        self.extension_to_find = config.extension_to_find
+        self.path_to_scan = config.path_to_scan
+        self.path_to_copy_to =  os.path.normpath(config.path_to_copy_to)
+        if not  os.path.isdir("logs"):
+            os.mkdir("logs")
+        self.pic_info = self.set_logger( os.path.join("logs","picture_info.log"), logging.DEBUG)
+        self.general =  self.set_logger( os.path.join("logs","general.log"), logging.DEBUG)
 
         self.scan_directories()
 
@@ -44,22 +44,22 @@ class FindPictures:
 
     def scan_directories(self):
         file_counter = 0
-        for root, dir, files in walk(self.path_to_scan): # We don't need to use dir
+        for root, dir, files in os.walk(self.path_to_scan): # We don't need to use dir
             for file in files:
-                if file.lower().endswith(self.extension_to_find): # Will likely change to check it's in a list rather than a string
+                # if file.lower().endswith(self.extension_to_find): # Will likely change to check it's in a list rather than a string
+                if os.path.splitext(file.lower())[-1] in self.extension_to_find:
                     file_counter += 1
                     self.general.debug(f'Found picture named: "{file}"')
-                    file_path = path.join(root, file)
+                    file_path =  os.path.join(root, file)
                     hash_value = self.get_hash(file_path)
                     if hash_value not in self.hash_list:
                         self.hash_list.append(hash_value)
                         self.unique_file_paths.append(file_path)
-                        self.general.info(f"{file} is UNIQUE")
+                        self.general.info(f'"{file}" is UNIQUE')
                     else:
                         self.dupe_file_paths.append(file_path)
-                        self.general.info(f"{file} is DUPLICATE")
-
-
+                        self.general.info(f'"{file}" is DUPLICATE')
+                        self.general.debug(f'"{file}" has hash value of {hash_value}, which has already been allocated')
 
         self.general.info(f'Found {file_counter} file in total')
         self.general.info(f'Found {len(self.unique_file_paths)} unique files')
@@ -81,7 +81,7 @@ class FindPictures:
             if TESTING == True:
                 self.pic_info.info(f'IN TESTING MODE: Moved "{file_path}" to "{self.path_to_copy_to}"')
             else:
-                copy(file_path, path.normpath(self.path_to_copy_to))
+                copy(file_path, os.path.normpath(self.path_to_copy_to))
                 self.pic_info.info(f'Moved "{file_path}" to "{self.path_to_copy_to}"')
 
 
