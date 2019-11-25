@@ -1,4 +1,8 @@
-entension.to.look.for:
-  - 'jpg'
-  - 'png'
-  - 'gif'
+# Add a list of your extensions here (Don't forget the dot)
+extensions_to_find:
+  - '.jpg'
+  - '.png'
+  - '.gif'
+  
+path_to_scan: 'test_scan'
+path_to_copy_to: 'test_save'
