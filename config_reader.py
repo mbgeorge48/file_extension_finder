@@ -6,7 +6,7 @@ class ConfigReader:
     def __init__(self):
         config_path = 'config.yml'
         self.config = self.read_yml_config(config_path)
-        self.extension_to_find = self.config.get('extension_to_find')
+        self.extensions_to_find = self.config.get('extensions_to_find')
         self.path_to_scan = self.config.get('path_to_scan')
         self.path_to_copy_to = self.config.get('path_to_copy_to')
 

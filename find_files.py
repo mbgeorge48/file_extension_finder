@@ -5,32 +5,27 @@ import logging
 from config_reader import ConfigReader
 
 TESTING = True
-# FORMATTER = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
 FORMATTER = logging.Formatter("[%(asctime)s] [%(levelname)8s] --- %(message)s (%(filename)s:%(lineno)s)", "%Y-%m-%d %H:%M:%S")
 
-class FindPictures:
+class FindFiles:
     unique_file_paths = list()
     dupe_file_paths = list()
     hash_list = list()
 
-    pic_info = None
+    file_info = None
     general = None
 
     def __init__(self):
         config = ConfigReader()
-        self.extension_to_find = config.extension_to_find
+        self.extensions_to_find = config.extensions_to_find
         self.path_to_scan = os.path.normpath(config.path_to_scan)
         self.path_to_copy_to =  os.path.normpath(config.path_to_copy_to)
         if not  os.path.isdir("logs"):
             os.mkdir("logs")
-        self.pic_info = self.set_logger( os.path.join("logs","picture_info.log"), logging.DEBUG)
+        self.file_info = self.set_logger( os.path.join("logs","file_info.log"), logging.DEBUG)
         self.general =  self.set_logger( os.path.join("logs","general.log"), logging.DEBUG)
 
         self.scan_directories()
-
-        print(len(self.unique_file_paths))
-        print(len(self.dupe_file_paths))
-
         self.move_files()
 
     def set_logger(self, log_name, level):
@@ -46,10 +41,9 @@ class FindPictures:
         file_counter = 0
         for root, dir, files in os.walk(self.path_to_scan): # We don't need to use dir
             for file in files:
-                # if file.lower().endswith(self.extension_to_find): # Will likely change to check it's in a list rather than a string
-                if os.path.splitext(file.lower())[-1] in self.extension_to_find:
+                if os.path.splitext(file.lower())[-1] in self.extensions_to_find:
                     file_counter += 1
-                    self.general.debug(f'Found picture named: "{file}"')
+                    self.general.debug(f'Found file named: "{file}"')
                     file_path =  os.path.join(root, file)
                     hash_value = self.get_hash(file_path)
                     if hash_value not in self.hash_list or hash_value != 1:
@@ -61,9 +55,12 @@ class FindPictures:
                         self.general.info(f'"{file}" is DUPLICATE')
                         self.general.debug(f'"{file}" has hash value of {hash_value}, which has already been allocated')
 
+        self.general.info('#'*50)
         self.general.info(f'Found {file_counter} file in total')
         self.general.info(f'Found {len(self.unique_file_paths)} unique files')
         self.general.info(f'Found {len(self.dupe_file_paths)} duplicate files')
+        self.general.info('#'*50)
+
 
     def get_hash(self, file_path):
         blocksize = 65536
@@ -77,17 +74,17 @@ class FindPictures:
             afile.close()
             return hasher.hexdigest()
         except PermissionError:
-            self.pic_info.warning(f'Permission denied trying to read "{file_path}" marked it as a duplicate')
+            self.file_info.warning(f'Permission denied trying to read "{file_path}" marked it as a duplicate')
             return 1
 
     def move_files(self):
         for file_path in self.unique_file_paths:
             if TESTING == True:
-                self.pic_info.info(f'IN TESTING MODE: Moved "{file_path}" to "{self.path_to_copy_to}"')
+                self.file_info.info(f'IN TESTING MODE: Moved "{file_path}" to "{self.path_to_copy_to}"')
             else:
                 copy(file_path, os.path.normpath(self.path_to_copy_to))
-                self.pic_info.info(f'Moved "{file_path}" to "{self.path_to_copy_to}"')
+                self.file_info.info(f'Moved "{file_path}" to "{self.path_to_copy_to}"')
 
 
 if __name__ == "__main__":
-    find_pictures = FindPictures()
+    find_files = FindFiles()
