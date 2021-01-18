@@ -9,6 +9,8 @@ class ConfigReader:
         self.extensions_to_find = self.config.get('extensions_to_find')
         self.path_to_scan = self.config.get('path_to_scan')
         self.path_to_copy_to = self.config.get('path_to_copy_to')
+        self.testing = self.config.get('testing')
+        self.log_level = self.config.get('log_level')
 
     def read_yml_config(self, filename):
         """

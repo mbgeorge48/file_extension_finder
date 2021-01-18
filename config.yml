@@ -3,6 +3,11 @@ extensions_to_find:
   - '.jpg'
   - '.png'
   - '.gif'
+  - '.bmp'
   
-path_to_scan: 'test_scan'
-path_to_copy_to: 'test_save'
+path_to_scan: 'M:\Pictures'
+path_to_copy_to: 'M:\Pictures_test'
+
+testing: true
+# Possible values are debug, info, warning, error, critical
+log_level: 'debug'

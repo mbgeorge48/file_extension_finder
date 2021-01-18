@@ -5,15 +5,14 @@ import logging
 import shutil
 from config_reader import ConfigReader
 
-TESTING = False
 FORMATTER = logging.Formatter(
-    "[%(asctime)s] [%(levelname)8s] --- %(message)s (%(filename)s:%(lineno)s)", "%Y-%m-%d %H:%M:%S")
-
+    "[%(asctime)s] [%(levelname)8s] --- %(message)s", "%Y-%m-%d %H:%M:%S")
 
 class FindFiles:
     unique_file_paths = list()
     dupe_file_paths = list()
-    hash_list = list()
+    # I mark file read errors as 1 so they aren't moved
+    hash_list = [1]
 
     file_info = None
     general = None
@@ -23,13 +22,15 @@ class FindFiles:
         self.extensions_to_find = config.extensions_to_find
         self.path_to_scan = os.path.normpath(config.path_to_scan)
         self.path_to_copy_to = os.path.normpath(config.path_to_copy_to)
+        self.testing = config.testing
+        self.log_level = config.log_level.upper()
 
         if not os.path.isdir("logs"):
             os.mkdir("logs")
         self.file_info = self.set_logger(os.path.join(
-            "logs", "file_info.log"), logging.DEBUG)
+            "logs", "file_info.log"), self.log_level)
         self.general = self.set_logger(os.path.join(
-            "logs", "general.log"), logging.DEBUG)
+            "logs", "general.log"), self.log_level)
 
         self.get_free_disk_space()
 
@@ -49,7 +50,7 @@ class FindFiles:
         file_counter = 0
         # We don't need to use dir
         for root, dir, files in os.walk(self.path_to_scan):
-            for file in files:
+            for progress, file in enumerate(files):
                 if os.path.splitext(file.lower())[-1] in self.extensions_to_find:
                     file_counter += 1
                     self.general.debug(f'Found file named: "{file}"')
@@ -60,21 +61,32 @@ class FindFiles:
                             f'Not enough room left on device - stopping before: "{file_path}"')
                         break
                     hash_value = self.get_hash(file_path)
-                    if hash_value not in self.hash_list or hash_value != 1:
+                    self.general.debug(f'"{file}" has hash value of {hash_value}')
+
+                    if hash_value not in self.hash_list:
                         self.hash_list.append(hash_value)
                         self.unique_file_paths.append(file_path)
                         self.general.info(f'"{file}" is UNIQUE')
                     else:
+                        self.hash_list.append(hash_value)
                         self.dupe_file_paths.append(file_path)
-                        self.general.info(f'"{file}" is DUPLICATE')
-                        self.general.debug(
-                            f'"{file}" has hash value of {hash_value}, which has already been allocated')
+                        self.general.warning(f'"{file}" is DUPLICATE')
 
+
+        final_results = [
+            'Found ' + str(file_counter) +' file in total',
+            'Found ' + str(len(self.unique_file_paths)) +' unique files',
+            'Found ' + str(len(self.dupe_file_paths)) +' duplicate files',
+        ]
         self.general.info('#'*50)
-        self.general.info(f'Found {file_counter} file in total')
-        self.general.info(f'Found {len(self.unique_file_paths)} unique files')
-        self.general.info(f'Found {len(self.dupe_file_paths)} duplicate files')
+        self.general.info(f'{final_results[0]}')
+        self.general.info(f'{final_results[1]}')
+        self.general.info(f'{final_results[2]}')
         self.general.info('#'*50)
+        
+        print(f'{final_results[0]}')
+        print(f'{final_results[1]}')
+        print(f'{final_results[2]}')
 
     def get_hash(self, file_path):
         blocksize = 65536
@@ -94,7 +106,7 @@ class FindFiles:
 
     def move_files(self):
         for file_path in self.unique_file_paths:
-            if TESTING == True:
+            if self.testing == True:
                 self.file_info.info(
                     f'IN TESTING MODE: Moved "{file_path}" to "{self.path_to_copy_to}"')
             else:
